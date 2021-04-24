@@ -1,0 +1,16 @@
+{% extends "books/base.html" %}
+
+{% block content %}
+    {% for request in requests %}
+        <article class="media content-section">
+            <div class="media-body">
+                <div class="article-metadata">
+                    <a class="mr-2" href="{% url 'book-detail' request.book_detail.id %}">{{ request.book_detail.title }}</a>
+                    <small class="text-muted">{{ request.book_detail.author }}</small>
+                </div>
+{#                <h2><a class="article-title" href="{% url 'profile-detail' request.requested_by.id %}">requested by {{ request.requested_by }}</a></h2>#}
+{#               <p class="article-content">{{ book.summary }}</p>#}
+            </div>
+        </article>
+    {% endfor %}
+{% endblock content %}

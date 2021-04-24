@@ -1,0 +1,34 @@
+{% extends "books/base.html" %}
+{% block content %}
+    <div class="content-section">
+      <div class="media">
+        <img class="rounded-circle account-img" src="{{ user.profile.image.url }}">
+        <div class="media-body">
+          <h2 class="account-heading">{{ user.username }}</h2>
+          <p class="text-secondary">{{ user.email }}</p>
+        </div>
+      </div>
+    </div>
+    <h3>Book requests by {{ user.username }}</h3>
+    {% for request in requests %}
+        <article class="media content-section">
+            <div class="media-body">
+                <div class="article-metadata">
+                    <a class="mr-2" href="{% url 'book-detail' request.book_detail.id %}">{{ request.book_detail.title }}</a>
+                    <small class="text-muted">{{ request.book_detail.author }}</small>
+                </div>
+{#                <h2>requested by </h2><h2><a class="article-title" href="{% url 'profile-detail' request.requested_by.id %}">{{ request.requested_by }}</a></h2>#}
+{#               <p class="article-content">{{ book.summary }}</p>#}
+                {% if request.request_status == 'Pending' %}
+                {% if request.book_detail.available == True %}
+                    <a class="btn btn-outline-secondary" href="{% url 'request-approve' request.id %}">Approve</a>
+                    <a class="btn btn-outline-danger" href="{% url 'request-decline' request.id %}">Decline</a>
+                {% else %}
+                    <small>This book is currently not available</small>
+                {% endif %}
+                {% endif %}
+                <small>Request status: {{ request.request_status }}</small>
+            </div>
+        </article>
+    {% endfor %}
+{% endblock content %}
