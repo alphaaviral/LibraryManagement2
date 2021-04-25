@@ -7,6 +7,10 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 import datetime
+from django.core.mail import send_mail
+from Library_management import settings
+
+admin_email ='alphaaviral@gmail.com'
 
 class BookListView(ListView):
     model = Book
@@ -121,10 +125,18 @@ class RequestListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 def RequestDeclineView(request, **kwargs):
     current_request = request_detail.objects.filter(id=kwargs['pk'])[0]
     current_user = request.user
+    requesting_user=current_request.requested_by.email
 
     if request.method =='POST':
         current_request.request_status = 'Declined'
         current_request.save()
+        send_mail(
+            'Book Issue Request',
+            'Your request has been declined for'+ current_request.book_detail.title,
+            settings.EMAIL_HOST_USER,
+            [requesting_user],
+            fail_silently=False,
+        )
         return redirect('request-list')
 
     if current_user.has_perm('books.change_book'):
@@ -135,16 +147,25 @@ def RequestDeclineView(request, **kwargs):
 @login_required
 def RequestApproveView(request, **kwargs):
     current_request = request_detail.objects.filter(id=kwargs['pk'])[0]
-    current_user = request.user
+    logged_in_user=request.user
+    current_user = current_request.requested_by
+    current_user_email=current_user.email
     if request.method =='POST':
         current_request.book_detail.available = False
         current_request.request_status='Approved'
         current_request.save()
         current_request.book_detail.save()
+        send_mail(
+            'Book Issue Request',
+            'Your request has been approved for '+ current_request.book_detail.title,
+            settings.EMAIL_HOST_USER,
+            [current_user_email],
+            fail_silently=False,
+        )
         return redirect('request-list')
 
     else:
-        if current_user.has_perm('books.change_book'):
+        if logged_in_user.has_perm('books.change_book'):
             if current_request.book_detail.available==True:
                 return render(request, 'books/request_approve.html')
             else:
@@ -190,6 +211,7 @@ class ApprovedRequestListView(LoginRequiredMixin, UserPassesTestMixin, ListView)
         current_user = self.request.user
         if current_user.has_perm('books.add_book'):
             return True
+
         return False
 
 class RenewRequestView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -209,24 +231,3 @@ class RenewRequestView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 return True
             else:
                 return HttpResponse('<h2>You cannot return a book you do not have!</h2>')
-# @login_required
-# def RenewRequestView(request, **kwargs):
-#     current_request = request_detail.objects.filter(id=kwargs['pk'])[0]
-#     current_user = request.user
-#     if request.method == 'POST':
-#         form = RequestPeriodForm(instance=current_request.return_date)
-#         if form.is_valid():
-#
-#             return redirect('#')
-#
-#     else:
-#         if current_user.has_perm('books.change_book')==False:
-#             if current_request.book_detail.available == False:
-#                 form = RequestPeriodForm(instance=current_request.return_date)
-#                 context = {
-#                     'form': form,
-#                 }
-#                 return render(request, 'books/renew_request.html', context)
-#
-#         else:
-#             raise PermissionDenied
