@@ -1,0 +1,11 @@
+{% extends "books/base.html" %}
+
+{% block content %}
+    {% if searched %}
+    <center><div>You searched for {{ searched }}</div>
+        <br/>
+        {% for book in books %}
+            <a href="{% url 'book-detail' book.id%}">{{ book }}</a> - {{ book.author }}<br/>
+        {% endfor %}
+    {% endif %}
+{% endblock content %}

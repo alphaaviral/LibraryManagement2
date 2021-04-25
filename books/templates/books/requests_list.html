@@ -1,8 +1,27 @@
 {% extends "books/base.html" %}
 
 {% block content %}
+    <legend>Pending Requests</legend>
     {% for request in requests %}
-        {% if request.request_status == 'Pending' %}
+        {% if request.request_status == 'Pending' and request.book_detail.available == True %}
+
+            <article class="media content-section">
+            <div class="media-body">
+                <div class="article-metadata">
+                    <a class="mr-2" href="{% url 'book-detail' request.book_detail.id %}">{{ request.book_detail.title }}</a>
+                    <small class="text-muted">{{ request.book_detail.author }}</small>
+                </div>
+                <h3>requested by </h3><h3><a class="article-title" href="{% url 'profile-detail' request.requested_by.id %}">{{ request.requested_by }}</a></h3>
+{#               <p class="article-content">{{ book.summary }}</p>#}
+                    <a class="btn btn-outline-secondary" href="{% url 'request-approve' request.id %}">Approve</a>
+                    <a class="btn btn-outline-danger" href="{% url 'request-decline' request.id %}">Decline</a>
+                    </div>
+        </article>
+        {% endif %}
+    {% endfor %}
+
+     {% for request in requests %}
+        {% if request.request_status == 'Pending' and request.book_detail.available == False %}
         <article class="media content-section">
             <div class="media-body">
                 <div class="article-metadata">
@@ -11,15 +30,10 @@
                 </div>
                 <h3>requested by </h3><h3><a class="article-title" href="{% url 'profile-detail' request.requested_by.id %}">{{ request.requested_by }}</a></h3>
 {#               <p class="article-content">{{ book.summary }}</p>#}
-                {% if request.book_detail.available == True %}
-                    <a class="btn btn-outline-secondary" href="{% url 'request-approve' request.id %}">Approve</a>
-                    <a class="btn btn-outline-danger" href="{% url 'request-decline' request.id %}">Decline</a>
-                {% else %}
                     <small>This book is currently not available</small>
-                {% endif %}
-
-            </div>
+                    </div>
         </article>
         {% endif %}
     {% endfor %}
+
 {% endblock content %}

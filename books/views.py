@@ -5,6 +5,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .forms import RequestPeriodForm
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+import datetime
 
 class BookListView(ListView):
     model = Book
@@ -15,10 +17,38 @@ class BookListView(ListView):
 def home(request):
     return render(request, 'books/main-home.html')
 
-class BookDetailView(DetailView):
-    model = Book
-    template_name = 'books/book_detail.html'
-    context_object_name = 'book'
+def search_venues(request):
+    if request.method == 'POST':
+        searched = request.POST.get("searched")
+        books = Book.objects.filter(title__contains=searched)|Book.objects.filter(author__contains=searched)|Book.objects.filter(genre__contains=searched)|Book.objects.filter(ISBN__contains=searched)|Book.objects.filter(publisher__contains=searched)
+        context={
+            'searched': searched,
+            'books': books,
+        }
+    return render(request, 'books/search_venues.html', context)
+
+def BookDetailView(request, **kwargs):
+    current_book = Book.objects.filter(id=kwargs['pk'])[0]
+    current_user = request.user
+    requests_by_user = request_detail.objects.filter(requested_by=current_user)
+    that_request_by_user = requests_by_user.filter(book_detail = current_book)
+
+    if  that_request_by_user.filter(request_status = 'Approved').exists():
+        ref_request = that_request_by_user.filter(request_status='Approved')[0]
+        x=1
+    elif that_request_by_user.filter(request_status = 'Pending').exists():
+        x=0
+        ref_request=0
+    else:
+        x=2
+        ref_request = 0
+    context={
+        'book': current_book,
+        'x': x,
+        'request': ref_request,
+    }
+
+    return render(request, 'books/book_detail.html', context)
 
 class BookCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Book
@@ -115,6 +145,88 @@ def RequestApproveView(request, **kwargs):
 
     else:
         if current_user.has_perm('books.change_book'):
-            return render(request, 'books/request_approve.html')
+            if current_request.book_detail.available==True:
+                return render(request, 'books/request_approve.html')
+            else:
+                return HttpResponse('<h2>This book is not available!</h2>')
         else:
             raise PermissionDenied
+@login_required
+def BookReturnView(request, **kwargs):
+    current_request = request_detail.objects.filter(id=kwargs['pk'])[0]
+    current_user = request.user
+    current_date = datetime.datetime.now().date()
+    delta = (current_date-current_request.return_date)
+    fine = delta.days*20
+    if request.method =='POST':
+        current_request.book_detail.available=True
+        current_request.request_status = 'Returned'
+        current_request.save()
+        current_request.book_detail.save()
+        return redirect('approved-request-list')
+    else:
+        if current_user.has_perm('books.change_book'):
+            if current_request.book_detail.available==False:
+                context = {
+                    'request': current_request,
+                    'fine': fine,
+                }
+
+                return render(request, 'books/return_book.html', context)
+            else:
+                return HttpResponse('<h2>This book is already in stock!</h2>')
+        else:
+            raise PermissionDenied
+
+
+class ApprovedRequestListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+
+    model = request_detail
+    template_name = 'books/approved_request_list.html'
+    context_object_name = 'requests'
+    ordering = ['book_detail']
+
+    def test_func(self):
+        current_user = self.request.user
+        if current_user.has_perm('books.add_book'):
+            return True
+        return False
+
+class RenewRequestView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = request_detail
+    form_class = RequestPeriodForm
+    template_name = 'books/renew_request.html'
+    context_object_name = 'form'
+
+    def test_func(self):
+        current_request = request_detail.objects.filter(id=self.kwargs.get('pk'))[0]
+        current_user= self.request.user
+        if current_user.has_perm('books.change_book'):
+            return False
+        else:
+            if current_request.book_detail.available==False:
+                current_request.request_status='Pending for renewal'
+                return True
+            else:
+                return HttpResponse('<h2>You cannot return a book you do not have!</h2>')
+# @login_required
+# def RenewRequestView(request, **kwargs):
+#     current_request = request_detail.objects.filter(id=kwargs['pk'])[0]
+#     current_user = request.user
+#     if request.method == 'POST':
+#         form = RequestPeriodForm(instance=current_request.return_date)
+#         if form.is_valid():
+#
+#             return redirect('#')
+#
+#     else:
+#         if current_user.has_perm('books.change_book')==False:
+#             if current_request.book_detail.available == False:
+#                 form = RequestPeriodForm(instance=current_request.return_date)
+#                 context = {
+#                     'form': form,
+#                 }
+#                 return render(request, 'books/renew_request.html', context)
+#
+#         else:
+#             raise PermissionDenied

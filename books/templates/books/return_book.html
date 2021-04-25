@@ -1,0 +1,29 @@
+{% extends "books/base.html" %}
+{% block content %}
+    <div class="content-section">
+    <form method="POST">
+    {% csrf_token %}
+        <fieldset class="form-group">
+    <legend class="border-bottom" mb-4>
+        Return Book
+    </legend>
+    <article class="media content-section">
+            <div class="media-body">
+                <div class="article-metadata">
+                    <a class="mr-2" href="{% url 'book-detail' request.book_detail.id %}">{{ request.book_detail.title }}</a>
+                    <small class="text-muted">{{ request.book_detail.author }}</small>
+                </div>
+                <h3>borrowed by </h3><h3><a class="article-title" href="{% url 'profile-detail' request.requested_by.id %}">{{ request.requested_by }}</a></h3>
+                <h3>Due to be returned on {{ request.return_date }}</h3>
+                {% if fine > 0 %}
+                <h3>Late fine to be paid: {{ fine }} Rupees</h3></div></article>
+                {% endif %}
+        </fieldset>
+        <div class="form-group">
+            <button class="btn btn-outline-info" type="submit">Take fine and return</button>
+            <a class="btn btn-outline-secondary" href="{% url 'approved-request-list' %}">Cancel</a>
+        </div>
+    </form>
+    </div>
+{% endblock content %}
+

@@ -16,3 +16,14 @@ class RequestPeriodForm(forms.ModelForm):
         help_texts = {
             'return_date': 'Enter the date by which you will return the book (Max-3 weeks)',
         }
+
+# class RenewPeriodForm(forms.ModelForm):
+#     class Meta:
+#         model = request_detail
+#         fields = ['renew_till']
+#         widgets = {
+#             'renew_till': DateInput(),
+#         }
+#         help_texts = {
+#             'renew_till': 'Enter the date by which you will return the book (Max-3 weeks)',
+#         }
